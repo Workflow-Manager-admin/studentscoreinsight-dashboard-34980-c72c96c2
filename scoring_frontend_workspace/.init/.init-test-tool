@@ -1,0 +1,4 @@
+{
+    "command": "npm run test",
+    "working_directory": "/home/kavia/workspace/code-generation/studentscoreinsight-dashboard-34980-c72c96c2/scoring_frontend_workspace/scoring_frontend"
+}
