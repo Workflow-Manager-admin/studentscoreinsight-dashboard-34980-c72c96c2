@@ -7,6 +7,7 @@ import Scores from "./pages/Scores";
 import Analytics from "./pages/Analytics";
 import Performance from "./pages/Performance";
 import Auth from "./pages/Auth";
+import BulkImport from "./pages/BulkImport";
 
 const getAccessToken = () => localStorage.getItem("access_token");
 
@@ -54,6 +55,7 @@ function App() {
     else if (route === "scores") content = <Scores />;
     else if (route === "analytics") content = <Analytics />;
     else if (route === "performance") content = <Performance />;
+    else if (route === "bulkimport") content = <BulkImport />;
     else content = <Dashboard />;
   }
 

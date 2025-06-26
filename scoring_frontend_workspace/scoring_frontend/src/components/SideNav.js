@@ -14,6 +14,7 @@ function SideNav({ onNavigate, current, theme, onToggleTheme, authed, onLogout }
     { label: "Scores", value: "scores", icon: "📝" },
     { label: "Analytics", value: "analytics", icon: "📈" },
     { label: "Performance", value: "performance", icon: "✨" },
+    { label: "Bulk Import", value: "bulkimport", icon: "⬆️" }
   ];
   return (
     <nav className="sidenav">

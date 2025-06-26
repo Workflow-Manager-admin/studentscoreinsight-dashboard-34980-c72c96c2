@@ -1,52 +1,7 @@
 /home/kavia/workspace/code-generation/studentscoreinsight-dashboard-34980-c72c96c2/scoring_backend_workspace/scoring_backend/venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:373: UserWarning: Valid config keys have changed in V2:
 * 'orm_mode' has been renamed to 'from_attributes'
   warnings.warn(message, UserWarning)
-(trapped) error reading bcrypt version
-Traceback (most recent call last):
-  File "/home/kavia/workspace/code-generation/studentscoreinsight-dashboard-34980-c72c96c2/scoring_backend_workspace/scoring_backend/venv/lib/python3.12/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
-    version = _bcrypt.__about__.__version__
-              ^^^^^^^^^^^^^^^^^
-AttributeError: module 'bcrypt' has no attribute '__about__'
-INFO:     Started server process [3080]
+INFO:     Started server process [14247]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:3001 (Press CTRL+C to quit)
-INFO:     100.64.39.19:44814 - "HEAD /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:44798 - "HEAD /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:44802 - "HEAD /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:44790 - "HEAD /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:44828 - "GET /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:44830 - "GET /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:44844 - "GET /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:44846 - "GET /openapi.json HTTP/1.1" 200 OK
-INFO:     100.64.39.19:44854 - "GET /openapi.json HTTP/1.1" 200 OK
-INFO:     100.64.39.19:44856 - "GET /openapi.json HTTP/1.1" 200 OK
-INFO:     100.64.39.19:51606 - "GET /health HTTP/1.1" 200 OK
-INFO:     100.64.39.19:33772 - "POST /auth/register HTTP/1.1" 200 OK
-INFO:     100.64.39.19:56094 - "HEAD /openapi.json HTTP/1.1" 200 OK
-INFO:     100.64.39.19:56098 - "GET /openapi.json HTTP/1.1" 200 OK
-INFO:     100.64.39.19:49848 - "HEAD /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:49864 - "HEAD /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:49878 - "HEAD /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:49880 - "HEAD /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:49882 - "HEAD /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:49898 - "HEAD /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:49906 - "GET /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:49918 - "GET /docs HTTP/1.1" 200 OK
-INFO:     100.64.39.19:49934 - "GET /openapi.json HTTP/1.1" 200 OK
-INFO:     100.64.39.19:49944 - "GET /openapi.json HTTP/1.1" 200 OK
-INFO:     100.64.39.19:46782 - "OPTIONS /auth/register HTTP/1.1" 200 OK
-INFO:     100.64.39.19:46784 - "POST /auth/register HTTP/1.1" 200 OK
-INFO:     100.64.39.19:47164 - "POST /auth/token HTTP/1.1" 200 OK
-INFO:     100.64.39.19:47180 - "OPTIONS /analytics/summary HTTP/1.1" 200 OK
-INFO:     100.64.39.19:47184 - "OPTIONS /analytics/summary HTTP/1.1" 200 OK
-INFO:     100.64.39.19:47186 - "GET /analytics/summary HTTP/1.1" 200 OK
-INFO:     100.64.39.19:47202 - "GET /analytics/summary HTTP/1.1" 200 OK
-INFO:     100.64.39.19:36070 - "GET /analytics/summary HTTP/1.1" 200 OK
-INFO:     100.64.39.19:36084 - "GET /analytics/summary HTTP/1.1" 200 OK
-INFO:     100.64.39.19:36090 - "GET /analytics/summary HTTP/1.1" 200 OK
-INFO:     100.64.39.19:36092 - "GET /analytics/summary HTTP/1.1" 200 OK
-INFO:     100.64.39.19:41986 - "GET /analytics/summary HTTP/1.1" 200 OK
-INFO:     100.64.39.19:42002 - "GET /analytics/summary HTTP/1.1" 200 OK
-INFO:     100.64.39.19:34342 - "GET /analytics/summary HTTP/1.1" 200 OK
-INFO:     100.64.39.19:34352 - "GET /analytics/summary HTTP/1.1" 200 OK
