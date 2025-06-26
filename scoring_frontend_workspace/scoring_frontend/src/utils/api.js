@@ -1,4 +1,11 @@
-const BASE = ""; // Set as "" for same-origin (proxy/backend forwarding)
+/**
+ * API base URL configuration.
+ * Uses environment variable if present, otherwise falls back to provided backend URL.
+ * Environment variable for React: REACT_APP_API_BASE_URL
+ */
+const BASE =
+  process.env.REACT_APP_API_BASE_URL ||
+  "https://vscode-internal-3053-qa.qa01.cloud.kavia.ai:3001";
 
 // PUBLIC_INTERFACE
 // Get stored token and return auth headers

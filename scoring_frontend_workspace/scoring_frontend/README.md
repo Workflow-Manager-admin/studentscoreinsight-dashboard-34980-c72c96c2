@@ -13,6 +13,26 @@ This project provides a minimal React template with a clean, modern UI and minim
 
 In the project directory, you can run:
 
+---
+
+## API Backend URL Configuration
+
+The React frontend is configured to call the backend at:
+
+```
+https://vscode-internal-3053-qa.qa01.cloud.kavia.ai:3001
+```
+
+To use a different backend during development or deployment, set the `REACT_APP_API_BASE_URL` environment variable.
+
+**Example:**
+```
+# In your .env file (create-react-app convention):
+REACT_APP_API_BASE_URL=https://your-backend-url.com
+```
+
+By default, the provided backend URL above is used.  
+
 ### `npm start`
 
 Runs the app in development mode.\
