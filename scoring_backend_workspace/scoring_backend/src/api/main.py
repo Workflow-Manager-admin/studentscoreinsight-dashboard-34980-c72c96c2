@@ -14,7 +14,8 @@ PUBLIC_INTERFACE
 from fastapi import FastAPI, HTTPException, Depends, status, Query
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import UploadFile, File
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timedelta
@@ -33,6 +34,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import sessionmaker, relationship, Session, declarative_base
 import sqlite3
 import os
+
+import pandas as pd
+import io
 
 # === CONFIGURATION ===
 
@@ -188,6 +192,16 @@ class AnalyticsSummary(BaseModel):
 
 
 # === FASTAPI SETUP ===
+
+BULK_IMPORT_TEMPLATE_COLUMNS = [
+    "name",              # String, required
+    "student_number",    # String, required
+    "email",             # String, optional
+    "subject",           # String, required
+    "value",             # Float, required
+    "max_value",         # Float, optional
+    "date",              # Datetime, optional (ISO8601)
+]
 
 app = FastAPI(
     title="Student Score Insight API",
@@ -721,6 +735,286 @@ def subject_distribution(
 # === HEALTH CHECK ENDPOINT ===
 
 # PUBLIC_INTERFACE
+@app.post(
+    "/admin/bulk_import",
+    tags=["Students"],
+    summary="Bulk import students and scores via Excel file",
+    status_code=200,
+    responses={
+        200: {
+            "description": "Bulk import result summary",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success_count": 5,
+                        "fail_count": 2,
+                        "errors": [
+                            {"row": 3, "error": "Student number missing"},
+                            {"row": 7, "error": "Invalid score value: abc"},
+                        ],
+                    }
+                }
+            },
+        },
+        400: {"description": "File format or validation error"},
+        401: {"description": "Unauthorized"},
+    },
+)
+async def bulk_import_students_and_scores(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """
+    Bulk-import students and scores from an uploaded Excel (.xlsx) file.
+
+    The Excel file must contain columns:
+        - name (student full name, required)
+        - student_number (unique student number, required)
+        - email (optional)
+        - subject (required)
+        - value (required, numeric)
+        - max_value (optional, numeric)
+        - date (optional, ISO8601 datetime)
+
+    Rows are processed: students are created/updated, then scores are created.
+    Returns success/fail counts and error details.
+
+    Security: Bearer JWT token required.
+    """
+    if file.content_type not in (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/octet-stream",
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="File must be an Excel .xlsx",
+        )
+
+    try:
+        contents = await file.read()
+        df = pd.read_excel(io.BytesIO(contents))
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error reading Excel: {str(e)}",
+        )
+
+    df.columns = [c.strip() for c in df.columns]
+    missing_columns = [
+        col for col in BULK_IMPORT_TEMPLATE_COLUMNS[:4]
+        if col not in df.columns
+    ]
+    if missing_columns:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Missing required columns: {', '.join(missing_columns)}",
+        )
+
+    errors = []
+    success_count = 0
+    fail_count = 0
+
+    for idx, row in df.iterrows():
+        rownum = idx + 2
+        row_data = {
+            col: row.get(col) if col in row else None
+            for col in BULK_IMPORT_TEMPLATE_COLUMNS
+        }
+        name = (
+            str(row_data.get("name")).strip()
+            if row_data.get("name") else None
+        )
+        student_number = (
+            str(row_data.get("student_number")).strip()
+            if row_data.get("student_number") else None
+        )
+        subject = (
+            str(row_data.get("subject")).strip()
+            if row_data.get("subject") else None
+        )
+
+        if not name:
+            errors.append({"row": rownum, "error": "Missing name"})
+            fail_count += 1
+            continue
+        if not student_number:
+            errors.append({"row": rownum, "error": "Missing student_number"})
+            fail_count += 1
+            continue
+        if not subject:
+            errors.append({"row": rownum, "error": "Missing subject"})
+            fail_count += 1
+            continue
+
+        try:
+            value = float(row_data.get("value"))
+        except Exception:
+            errors.append(
+                {
+                    "row": rownum,
+                    "error": f"Invalid value: {row_data.get('value')}",
+                }
+            )
+            fail_count += 1
+            continue
+
+        try:
+            max_value = (
+                float(row_data.get("max_value"))
+                if row_data.get("max_value") not in (None, "", "nan")
+                else None
+            )
+        except Exception:
+            errors.append(
+                {
+                    "row": rownum,
+                    "error": f"Invalid max_value: {row_data.get('max_value')}",
+                }
+            )
+            fail_count += 1
+            continue
+
+        date_val = row_data.get("date")
+        parsed_date = None
+        if pd.notnull(date_val):
+            try:
+                parsed_date = pd.to_datetime(date_val)
+            except Exception:
+                errors.append(
+                    {
+                        "row": rownum,
+                        "error": f"Invalid date: {date_val}",
+                    }
+                )
+                fail_count += 1
+                continue
+
+        email = (
+            str(row_data.get("email")).strip()
+            if row_data.get("email") and pd.notnull(row_data.get("email"))
+            else None
+        )
+
+        student_obj = (
+            db.query(Student)
+            .filter(Student.student_number == student_number)
+            .first()
+        )
+        if not student_obj:
+            student_obj = Student(
+                name=name,
+                student_number=student_number,
+                email=email,
+            )
+            db.add(student_obj)
+            db.commit()
+            db.refresh(student_obj)
+        else:
+            updated = False
+            if student_obj.name != name:
+                student_obj.name = name
+                updated = True
+            if email and student_obj.email != email:
+                student_obj.email = email
+                updated = True
+            if updated:
+                db.commit()
+
+        try:
+            score_kwargs = {
+                "student_id": student_obj.id,
+                "subject": subject,
+                "value": value,
+            }
+            if max_value is not None:
+                score_kwargs["max_value"] = max_value
+            if parsed_date is not None:
+                score_kwargs["date"] = parsed_date.to_pydatetime()
+            score_obj = Score(**score_kwargs)
+            db.add(score_obj)
+            db.commit()
+            success_count += 1
+        except Exception as e:
+            db.rollback()
+            errors.append(
+                {
+                    "row": rownum,
+                    "error": f"Score insert failed: {str(e)}",
+                }
+            )
+            fail_count += 1
+
+    return {
+        "success_count": success_count,
+        "fail_count": fail_count,
+        "errors": errors,
+    }
+
+# PUBLIC_INTERFACE
+@app.get(
+    "/admin/bulk_import/template",
+    tags=["Students"],
+    summary="Download Excel template for bulk student/score import",
+    response_description="Sample Excel file (.xlsx) for bulk upload.",
+    responses={
+        200: {
+            "content": {
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+            }
+        },
+        401: {"description": "Unauthorized"},
+    },
+)
+async def download_bulk_import_template(user: User = Depends(get_current_user)):
+    """
+    Download a sample .xlsx template for bulk import. The Excel file will have all necessary columns:
+        - name, student_number, email, subject, value, max_value, date
+
+    Values below the header are example placeholder/example data.
+    """
+    df = pd.DataFrame(
+        [
+            {
+                "name": "Jane Doe",
+                "student_number": "S10001",
+                "email": "jane@email.com",
+                "subject": "Math",
+                "value": 89.5,
+                "max_value": 100,
+                "date": pd.Timestamp(datetime.utcnow()).isoformat(),
+            },
+            {
+                "name": "John Smith",
+                "student_number": "S10002",
+                "email": "",
+                "subject": "English",
+                "value": 78.0,
+                "max_value": 100,
+                "date": pd.Timestamp(datetime.utcnow()).isoformat(),
+            },
+        ],
+        columns=BULK_IMPORT_TEMPLATE_COLUMNS,
+    )
+
+    out = io.BytesIO()
+    df.to_excel(out, index=False)
+    out.seek(0)
+    return StreamingResponse(
+        out,
+        media_type=(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ),
+        headers={
+            "Content-Disposition": (
+                'attachment; filename="bulk_import_template.xlsx"'
+            )
+        },
+    )
+
+# PUBLIC_INTERFACE
+
+
 @app.get(
     "/health",
     tags=["Health"],
@@ -742,6 +1036,7 @@ def db_health():
 
 
 # PUBLIC_INTERFACE
+
 @app.get(
     "/",
     summary="Basic health check",
