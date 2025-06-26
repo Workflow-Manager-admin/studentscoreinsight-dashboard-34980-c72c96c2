@@ -5,3 +5,9 @@ INFO:     Started server process [14247]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:3001 (Press CTRL+C to quit)
+INFO:     100.64.39.19:42164 - "GET /analytics/summary HTTP/1.1" 200 OK
+INFO:     100.64.39.19:42172 - "GET /analytics/summary HTTP/1.1" 200 OK
+INFO:     100.64.39.19:34262 - "GET /docs HTTP/1.1" 200 OK
+INFO:     100.64.39.19:34270 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     100.64.39.19:49848 - "OPTIONS /import/sample-template HTTP/1.1" 200 OK
+INFO:     100.64.39.19:49852 - "GET /import/sample-template HTTP/1.1" 404 Not Found

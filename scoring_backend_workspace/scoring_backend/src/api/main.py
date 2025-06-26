@@ -952,6 +952,8 @@ async def bulk_import_students_and_scores(
     }
 
 # PUBLIC_INTERFACE
+
+
 @app.get(
     "/admin/bulk_import/template",
     tags=["Students"],
@@ -960,18 +962,28 @@ async def bulk_import_students_and_scores(
     responses={
         200: {
             "content": {
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
-            }
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                    "schema": {
+                        "type": "string",
+                        "format": "binary"
+                    }
+                }
+            },
+            "description": "Excel file will be sent as attachment."
         },
         401: {"description": "Unauthorized"},
     },
 )
 async def download_bulk_import_template(user: User = Depends(get_current_user)):
     """
-    Download a sample .xlsx template for bulk import. The Excel file will have all necessary columns:
-        - name, student_number, email, subject, value, max_value, date
+    Download a sample .xlsx template for bulk import (CORS-enabled, correct headers).
+    The Excel file will have all necessary columns:
+      - name, student_number, email, subject, value, max_value, date
 
     Values below the header are example placeholder/example data.
+
+    Returns:
+        StreamingResponse: Excel file for download.
     """
     df = pd.DataFrame(
         [
@@ -1000,17 +1012,22 @@ async def download_bulk_import_template(user: User = Depends(get_current_user)):
     out = io.BytesIO()
     df.to_excel(out, index=False)
     out.seek(0)
+    # All headers for download + CORS for browser download support
+    headers = {
+        "Content-Disposition": 'attachment; filename="bulk_import_template.xlsx"',
+        "Access-Control-Expose-Headers": "Content-Disposition",
+        "Access-Control-Allow-Origin": "*",
+        # CORS is handled by middleware, but make explicit for file
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Headers": "Authorization,Content-Type",
+        "Access-Control-Allow-Methods": "GET,OPTIONS",
+    }
     return StreamingResponse(
         out,
-        media_type=(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ),
-        headers={
-            "Content-Disposition": (
-                'attachment; filename="bulk_import_template.xlsx"'
-            )
-        },
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
     )
+
 
 # PUBLIC_INTERFACE
 
