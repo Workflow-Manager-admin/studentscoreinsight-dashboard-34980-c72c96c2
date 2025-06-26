@@ -97,7 +97,7 @@ function BulkImport() {
   async function downloadSample() {
     setError("");
     try {
-      // Assume endpoint: GET /import/sample-template (content-disposition=attachment)
+      // Endpoint: GET /import/sample-template, expects file, Content-Disposition: attachment; filename=...
       const resp = await fetch(
         (process.env.REACT_APP_API_BASE_URL ||
           "https://vscode-internal-3053-qa.qa01.cloud.kavia.ai:3001") +
@@ -110,21 +110,46 @@ function BulkImport() {
           },
         }
       );
-      if (!resp.ok) throw new Error("Failed to download sample template.");
+      if (!resp.ok) {
+        let msg = "Failed to download sample template.";
+        // Try to extract error details
+        try {
+          const data = await resp.json();
+          if (data?.detail) msg = data.detail;
+          else if (data?.error) msg = data.error;
+        } catch {
+          // ignore JSON parse failure, use default msg
+        }
+        throw new Error(msg);
+      }
+      // Try to use filename from Content-Disposition if present
+      let filename = "students-scores-sample.xlsx";
+      const cd = resp.headers.get("content-disposition");
+      if (cd && cd.includes("filename=")) {
+        // e.g., attachment; filename=sample1.xlsx
+        const match = /filename="?([^"]+)"?/i.exec(cd);
+        if (match && match[1]) filename = match[1];
+      }
       const blob = await resp.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      // Default filename
-      a.download = "students-scores-sample.xlsx";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => window.URL.revokeObjectURL(url), 500);
+      // Provide feedback for browsers that don't support Blob download
+      if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+        // For IE/Edge
+        window.navigator.msSaveOrOpenBlob(blob, filename);
+      } else {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.style.display = "none";
+        a.click();
+        a.remove();
+        setTimeout(() => window.URL.revokeObjectURL(url), 500);
+      }
     } catch (err) {
       setError(
         err?.message ||
-          "Failed to download template. Try again later."
+        "Failed to download sample template. Try again later."
       );
     }
   }
